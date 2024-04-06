@@ -20,7 +20,7 @@
 
 ---
 
-MusicGen: A state-of-the-art controllable text-to-music model (by [Meta Research](https://github.com/facebookresearch/audiocraft))
+AudioGen: A state-of-the-art controllable text-to-music model (by [Meta Research](https://github.com/facebookresearch/audiocraft))
 
 ## Features
 
