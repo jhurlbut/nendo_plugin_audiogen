@@ -2,24 +2,24 @@ import numpy as np
 import random
 import torch
 from audiocraft.data.audio_utils import convert_audio
-from audiocraft.models import MusicGen
+from audiocraft.models import AudioGen
 from logging import Logger
 from typing import Literal, Tuple, Optional, List
 
 
 def load_model(
     version: str,
-) -> MusicGen:
+) -> AudioGen:
     """Load a pretrained model from the audiocraft library.
 
     Args:
         version (str): The version of the model to load.
 
     Returns:
-        MusicGen: The pretrained model.
+        AudioGen: The pretrained model.
     """
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = MusicGen.get_pretrained(version, device=device)
+    model = AudioGen.get_pretrained(version, device=device)
     model.lm.to(device)
     return model
 
@@ -40,19 +40,15 @@ def normalize_audio(audio_data: np.ndarray) -> np.ndarray:
 
 
 def do_predictions(
-    model: MusicGen,
+    model: AudioGen,
     logger: Logger,
     global_prompt: str,
     temperature: float,
-    bpm: int,
-    key: Literal["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "Bb", "B"],
-    scale: Literal["Major", "Minor"],
     trim_start: int,
     trim_end: int,
     overlay: int,
     duration: int,
     sample: Optional[Tuple[int, np.ndarray]] = None,
-    melodies: Optional[List[Tuple[int, np.ndarray]]] = None,
     sr_select: int = 44100,
     progress: Optional[bool] = False,
     cfg_coef: Optional[float] = 3.5,
@@ -63,19 +59,15 @@ def do_predictions(
     """Generate audio from a pretrained model.
 
     Args:
-        model (MusicGen): The pretrained model.
+        model (AudioGen): The pretrained model.
         logger (Logger): The logger to use for logging.
         global_prompt (str): The prompt for the generation.
         temperature (float): The temperature for the generation. Controls how "random" the next token will be.
-        bpm (int): The bpm of the generated track.
-        key (Literal["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "Bb", "B"]): The key of the generated track.
-        scale (Literal["Major", "Minor"]): The scale of the generated track.
         trim_start (int): The start time for the generation.
         trim_end (int): The end time for the generation.
         overlay (int): The overlay for the generation.
         duration (int): The duration of the generation.
         sample (Optional[Tuple[int, np.ndarray]]): The sample to use for the generation.
-        melodies (Optional[List[Tuple[int, np.ndarray]]]): The melodies to use for the generation.
         channel (Optional[Literal["stereo", "mono"]]): The channel to use for the generation.
         sr_select (Optional[str]): The sample rate to use for the generation.
         progress (Optional[bool]): Whether to show a progress bar for the generation.
@@ -94,6 +86,7 @@ def do_predictions(
         trim_end = 0
 
     seed = random.randint(0, 0xFFFF_FFFF_FFFF) if seed == -1 else seed
+    print('seed ',seed)
     torch.manual_seed(seed)
     maximum_size = 29.5
     cut_size = 0
@@ -127,19 +120,12 @@ def do_predictions(
             duration = sample_length + 0.5
 
     texts = []
-    bpm_str = ""
-    if bpm != 0:
-        bpm_str = str(bpm) + " bpm"
-    if key != "" and scale != "":
-        key_str = ", " + str(key) + " " + str(scale)
-    else:
-        key_str = ""
     global_str = (", " + str(global_prompt)) if str(global_prompt) != "" else ""
-    texts.append(bpm_str + key_str + global_str)
+    texts.append(global_str)
 
     text_single = texts[0]
     texts = [text_single for _ in range(n_samples)]
-
+    
     model.set_generation_params(
         temperature=temperature,
         duration=(duration - cut_size),
@@ -152,35 +138,11 @@ def do_predictions(
         "new batch",
         len(texts),
         texts,
-        "melodies:",
-        [None if m is None else (m[0], m[1].shape) for m in melodies]
-        if melodies
-        else None,
         "sample:",
         [None if sample is None else (sample[0], sample[1].shape)] if sample else None,
     )
-
-    processed_melodies = []
-    target_sr = 32000
+    target_sr = 16000
     target_ac = 1
-
-    if melodies is not None:
-        for melody in melodies:
-            if melody is None:
-                processed_melodies.append(None)
-            else:
-                sr, melody = (
-                    melody[0],
-                    torch.from_numpy(melody[1]).to(model.device).float().t(),
-                )
-                if melody.dim() == 1:
-                    melody = melody[None]
-                melody = melody[..., : int(sr * duration)]
-                melody = convert_audio(melody, sr, target_sr, target_ac)
-                processed_melodies.append(melody)
-
-        melody_single = processed_melodies[0]
-        processed_melodies = [melody_single for _ in range(n_samples)]
 
     if sample is not None:
         if sample_p is None:
@@ -188,7 +150,6 @@ def do_predictions(
             sample_m = sample_m.unsqueeze(0).repeat(
                 n_samples, *[1 for _ in range(sample_m.dim())]
             )
-
             outputs = model.generate_continuation(
                 prompt=sample_m,
                 prompt_sample_rate=global_sr,
@@ -207,7 +168,7 @@ def do_predictions(
             sample_p = sample_p.unsqueeze(0).repeat(
                 n_samples, *[1 for _ in range(sample_p.dim())]
             )
-
+           
             outputs = model.generate_continuation(
                 prompt=sample_m,
                 prompt_sample_rate=global_sr,
@@ -215,14 +176,6 @@ def do_predictions(
                 progress=progress,
             )
             outputs = torch.cat([sample_p, outputs], 2)
-
-    elif any(m is not None for m in processed_melodies):
-        outputs = model.generate_with_chroma(
-            descriptions=texts,
-            melody_wavs=processed_melodies,
-            melody_sample_rate=target_sr,
-            progress=progress,
-        )
     else:
         outputs = model.generate(texts, progress=progress)
 

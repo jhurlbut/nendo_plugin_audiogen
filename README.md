@@ -1,4 +1,4 @@
-# Nendo Plugin Musicgen 
+# Nendo Plugin Audiogen 
 
 <br>
 <p align="left">
@@ -24,17 +24,8 @@ MusicGen: A state-of-the-art controllable text-to-music model (by [Meta Research
 
 ## Features
 
-- Generate conditional and unconditional music
-- Generate outpaintings from a prompt and a `NendoTrack`
-- Use a `NendoTrack` as melody conditioning to generate music
-- Use custom finetuned musicgen models
+- Generate sound effects
 
-## Community Finetunes 🔥
-
-For a list of community finetunes check out [`community_finetunes.json`](docs/community_finetunes.json).
-If you want to contribute one to the list, open a PR 
-or contact us via [Twitter](https://twitter.com/okio_ai) 
-or [Discord](https://discord.gg/gaZMZKzScj)!
 
 ## Requirements
 
@@ -52,7 +43,7 @@ To run the plugin you also need to install `audiocraft` by Meta AI Research, run
 ## Installation
 
 1. [Install Nendo](https://github.com/okio-ai/nendo#installation)
-2. `pip install nendo-plugin-musicgen`
+2. `pip install -e .`
 
 ## Usage
 
@@ -70,21 +61,18 @@ or try it in colab:
 ```python
 from nendo import Nendo, NendoConfig
 
-nd = Nendo(config=NendoConfig(plugins=["nendo_plugin_musicgen"]))
+nd = Nendo(config=NendoConfig(plugins=["nendo_plugin_audiogen"]))
 
 # load track
 track = nd.library.add_track(file_path='/path/to/track.mp3')
 
-# run musicgen with custom model
-generated_collection = nd.plugins.musicgen(
+# run audiogen with custom model
+generated_collection = nd.plugins.audiogen(
     track=track,
     n_samples=5,
-    prompt="janelle monae, rnb, funky, fast, futuristic",
-    bpm=116,
-    key="C",
-    scale="Major",
-    duration=30,
-    conditioning_length=10
+    prompt="dog barking",
+    duration=1,
+    conditioning_length=1
 )
 generated_collection[0].play()
 ```

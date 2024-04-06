@@ -1,14 +1,14 @@
 [tool.poetry]
-name = "nendo-plugin-musicgen"
+name = "nendo-plugin-audiogen"
 version = "0.1.6"
 authors = [
-  "Aaron Abebe <aaron@okio.ai>",
+  "James Hurlbut <timespacemedia@gmail.com>",
 ]
-description = "Nendo MusicGen plugin: A state-of-the-art controllable text-to-music model (by Meta Research)"
+description = "Nendo AudioGen plugin: A state-of-the-art controllable text-to-sound model (by Meta Research)"
 license = "MIT"
 readme = "README.md"
-repository = "https://github.com/okio-ai/nendo_plugin_musicgen"
-homepage = "https://okio.ai"
+repository = "https://github.com/jhurlbut/nendo_plugin_audiogen"
+homepage = "https://github.com/jhurlbut"
 keywords = [
   "Nendo",
   "Plugin",

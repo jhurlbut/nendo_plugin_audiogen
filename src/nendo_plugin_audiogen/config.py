@@ -2,13 +2,12 @@ from pydantic_settings import BaseSettings
 from pydantic import Field
 
 
-class NendoMusicGenConfig(BaseSettings):
+class NendoAudioGenConfig(BaseSettings):
     """
-    Default settings for the Nendo musicgen plugin.
+    Default settings for the Nendo audiogen plugin.
     """
 
-    model: str = Field("facebook/musicgen-stereo-medium")
-    use_melody_conditioning: bool = Field(False)
+    model: str = Field("facebook/audiogen-medium")
     duration: float = Field(30.0)
     sample_rate: int = Field(32000)
     epochs: int = Field(1)
